@@ -1,8 +1,8 @@
-import requests
-import pandas as pd
 import re
 import nltk
 nltk.download('punkt')
+nltk.download('omw-1.4')
+nltk.download('averaged_perceptron_tagger')
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 nltk.download('stopwords')
@@ -14,20 +14,17 @@ import pickle
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import statistics
-from flask import Flask , request
-
+from flask import Flask,jsonify,request
+from urllib.request import urlopen
+import json
 
 app =Flask(__name__)
-def data():
-    url="https://optimal.solar/Sentiments-Analysis/fetchReviews.php"
-    headers = {'Content-Type': 'application/json' }
-    response = requests.get(url=url,headers=headers)
-    df = pd.read_json(response.text)
-    reviews = df.Customer_review.tolist()
-    if df.empty:
+def data(text):
+    review = text
+    if review == '':
         pass
     else:
-        return reviews
+        return review
 
 def ML_Predict(text):
     model = pickle.load(open('model.pkl', 'rb'))
@@ -35,7 +32,7 @@ def ML_Predict(text):
     review = review.lower()
     #text1 = vectorizer.transform([review]).toarray()
     if model.predict([review]) == 0:
-        prediction =False 
+        prediction = False 
     elif model.predict([review]) == 1: 
         prediction = True
     return prediction
@@ -76,8 +73,8 @@ def analysis(score):
     if score < 0:
         return False
     elif score == 0:
-        return None
-    else:
+        return False
+    elif score > 0:
         return True
 def predict(text):
     process_text = data_perprocessing(text)
@@ -86,33 +83,20 @@ def predict(text):
     return prediction
 
 def results(review):
-    if str(type(review)) == "<class 'list'>":
-        Ans = []
-        for i in review:
-            RB = predict(i)
-            ML = ML_Predict(i)
-            if RB == True and ML == True:
-                Ans.append(True)
-            elif RB == False and ML == False:
-                Ans.append(False)
-            else:
-                Ans.append(None)
-        return Ans
-    elif str(type(review)) == "<class 'str'>":
-        RB = predict(review)
-        ML = ML_Predict(review)
-        if RB == True and ML == True:
-            return True
-        elif RB == False and ML == False:
-            return False
-        else:
-            return None 
+    RB = predict(review)
+    ML = ML_Predict(review)
+    if RB == True and ML == True:
+        return True
+    elif RB == False and ML == False:
+        return False
+    else:
+        return False 
 
-
-@app.route('/', methods = ['GET'])
+@app.route('/', methods = ['POST'])
 def index():
-    review = data()
-    ans = results(review[0])
-    return str(ans)
-if __name__ == '__main__':
-    app.run(debug = False)   
+    getText = request.form["review"]
+    review = data(getText)
+    ans = results(review)
+    return jsonify(ans)
+if __name__ == 'main':
+    app.run()
