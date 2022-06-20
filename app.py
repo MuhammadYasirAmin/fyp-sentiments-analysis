@@ -111,9 +111,8 @@ def results(review):
 
 @app.route('/', methods = ['GET'])
 def index():
-    # review = data()
-    # ans = results(review[0])
-    # return str(ans)
-    return "Aplication running"
+    review = data()
+    ans = results(review[0])
+    return str(ans)
 if __name__ == '__main__':
     app.run(debug = False)   
