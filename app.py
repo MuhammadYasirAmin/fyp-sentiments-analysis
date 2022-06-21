@@ -97,6 +97,8 @@ def index():
     getText = request.form["review"]
     review = data(getText)
     ans = results(review)
-    return jsonify(ans)
+    return jsonify({
+        "predict":ans
+    })
 if __name__ == 'main':
     app.run()
